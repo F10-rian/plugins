@@ -1,9 +1,10 @@
 #!/bin/bash
 #
 # Script Info
-PROGVERSION="Version 1.1"
+PROGVERSION="Version 1.0"
 AUTHOR="Florian Seidel"
 PROGNAME="chech_ups.sh"
+LAST_CHANGE="01.02.2016"
 
 # HP battery_time_remaining .1.3.6.1.4.1.232.165.3.2.1.0 (sec)
 # HP battery_voltage			.1.3.6.1.4.1.232.165.3.2.2.0
