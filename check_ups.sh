@@ -222,6 +222,10 @@ function battery_voltage(){
 		APC)
 			BATTERY_VOLTAGE=`snmpwalk -v $VERSION -c $COMMUNITY $IP .1.3.6.1.4.1.318.1.1.1.3.2.1.0 -O q -O v`
 		;;
+		GENEREX)
+			BATTERY_VOLTAGE_TENTH=`snmpwalk -v $VERSION -c $COMMUNITY $IP .1.3.6.1.2.1.33.1.2.5.0 -O q -O v`
+			BATTERY_VOLTAGE=$(echo ${BATTERY_VOLTAGE_TENTH}*10 | bc)
+		;;
 		*)
 			echo "device is not supported"
 			print_help
@@ -259,6 +263,9 @@ function battery_capacity(){
 		;;
 		APC)
 			BATTERY_CAPACITY=`snmpwalk -v $VERSION -c $COMMUNITY $IP .1.3.6.1.4.1.318.1.1.1.2.2.1.0 -O q -O v`
+		;;
+		GENEREX)
+			BATTERY_CAPACITY=`snmpwalk -v $VERSION -c $COMMUNITY $IP .1.3.6.1.2.1.33.1.2.4.0 -O q -O v`	
 		;;
 		*)
 			echo "device is not supported"
