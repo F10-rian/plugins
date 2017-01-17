@@ -1,11 +1,20 @@
 #!/bin/bash
 #
 # Script Info
-PROGVERSION="Version 1.0"
+PROGVERSION="Version 1.2"
 AUTHOR="Florian Seidel"
 PROGNAME="chech_ups.sh"
-LAST_CHANGE="01.02.2016"
+LAST_CHANGE="17.01.2017"
 
+# Changlog
+# Version 1.2
+# add GENEREX managed UPS Monitoring
+#
+# Version 1.1
+# add APC managed UPS Monitoring
+
+# OIDs
+#
 # HP battery_time_remaining .1.3.6.1.4.1.232.165.3.2.1.0 (sec)
 # HP battery_voltage			.1.3.6.1.4.1.232.165.3.2.2.0
 # HP battery_capacity			.1.3.6.1.4.1.232.165.3.2.4.0
@@ -14,6 +23,12 @@ LAST_CHANGE="01.02.2016"
 #APC battery_capacity .1.3.6.1.4.1.318.1.1.1.2.2.1.0
 #APC battery_voltage .1.3.6.1.4.1.318.1.1.1.3.2.1.0
 #APC battery_time_remaining  .1.3.6.1.4.1.318.1.1.1.2.2.3.0 (Timeticks -> snmpwalk -v 1 -c public 10.22.254.206 .1.3.6.1.4.1.318.1.1.1.2.2.3.0 -O v | awk '{print $2}' | sed 's/.//;s/.$//')
+#GENEREX battery_time_remaining .1.3.6.1.2.1.33.1.2.3.0 (minutes)
+#GENEREX battery_voltage .1.3.6.1.2.1.33.1.2.5.0 (0.1 Volt DC)
+#GENEREX battery_current .1.3.6.1.2.1.33.1.2.6.0 (0.1 Amp DC)
+#GENEREX battery_capacity .1.3.6.1.2.1.33.1.2.4.0
+#GENEREX temperature .1.3.6.1.2.1.33.1.2.7.0 (degrees Centigrade)
+
 
 # Variables
 
@@ -41,12 +56,12 @@ function print_usage {
    -C <Community String>
    -M <Mode>
 		battery_time_remaining
-		battery_voltage
 		battery_capacity
+		temperature (GENEREX only)
    -u <unit>
    -w <Warning max Value in %,sec,min,hour>
    -c <Critical max Value in %>"
-   echo -e "Example: $PROGNAME -H 192.168.13.13 -v 2c -C public -M -w 80 -c 90"
+   echo -e "Example: $PROGNAME -H 192.168.13.13 -v 2c -C public -D GENEREX -M battery_capacity -w 80 -c 90"
 }
 
 function print_requirements {
@@ -103,7 +118,6 @@ done
 function battery_time_remaining(){
 	case $DEVICETYPE in
 		HP)
-
 			BATTERY_TIME_REMAINING_SEC=`snmpwalk -v $VERSION -c $COMMUNITY $IP .1.3.6.1.4.1.232.165.3.2.1.0 -O q -O v`
 			BATTERY_CAPACITY=`snmpwalk -v $VERSION -c $COMMUNITY $IP .1.3.6.1.4.1.232.165.3.2.4.0 -O q -O v`
 		;;
@@ -111,6 +125,11 @@ function battery_time_remaining(){
 			TIMETICKS=`snmpwalk -v $VERSION -c $COMMUNITY $IP .1.3.6.1.4.1.318.1.1.1.2.2.3.0 -O v | awk '{print $2}' | sed 's/.//;s/.$//'`
 			BATTERY_TIME_REMAINING_SEC=$(echo "${TIMETICKS}/100" | bc)
 			BATTERY_CAPACITY=`snmpwalk -v $VERSION -c $COMMUNITY $IP .1.3.6.1.4.1.318.1.1.1.2.2.1.0 -O q -O v`
+		;;
+		GENEREX)
+			BATTERY_TIME_REMAINING_MIN=`snmpwalk -v $VERSION -c $COMMUNITY $IP .1.3.6.1.2.1.33.1.2.3.0 -O q -O v`
+			BATTERY_TIME_REMAINING_SEC=$(echo ${BATTERY_TIME_REMAINING_MIN}*60 | bc)
+			BATTERY_CAPACITY=`snmpwalk -v $VERSION -c $COMMUNITY $IP .1.3.6.1.2.1.33.1.2.4.0 -O q -O v`		
 		;;
 		*)
 			echo "device is not supported"
