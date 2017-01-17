@@ -61,7 +61,7 @@ function print_usage {
    -u <unit>
    -w <Warning max Value in %,sec,min,hour>
    -c <Critical max Value in %>"
-   echo -e "Example: $PROGNAME -H 192.168.13.13 -v 2c -C public -D GENEREX -M battery_capacity -w 80 -c 90"
+   echo -e "Example: $PROGNAME -H 192.168.13.13 -v 2c -C public -D GENEREX -M battery_capacity -w 90 -c 80"
 }
 
 function print_requirements {
@@ -296,12 +296,48 @@ function battery_capacity(){
 	PERFSTRING="'Battery Capacity'=${BATTERY_CAPACITY}%;$WARNING;$CRITICAL;0;100"
 }
 
+function temperature(){
+	case $DEVICETYPE in
+		GENEREX)
+			TEMPERATUR_CELCIUS=`snmpwalk -v $VERSION -c $COMMUNITY $IP .1.3.6.1.2.1.33.1.2.7.0 -O q -O v`	
+		;;
+		*)
+			echo "device is not supported"
+			print_help
+			exit $STATE_UNKNOWN
+	esac
+	UNIT="°C"
+	if [ $WARNING -ge $CRITICAL ]
+	then
+		echo "critical value must be larger than warning"
+		print_help
+		exit $STATE_UNKNOWN
+	fi
+	
+	if [ $TEMPERATUR_CELCIUS -lt $WARNING ]
+	then
+		STATE=$STATE_OK
+	elif [ $TEMPERATUR_CELCIUS -ge $CRITICAL ]
+	then
+		STATE=$STATE_CRITICAL
+	elif [ $TEMPERATUR_CELCIUS -ge $WARNING ]
+	then
+		STATE=$STATE_WARNING
+	else
+		STATE=$STATE_UNKNOWN
+	fi
+	RETURNSTRING="Temperature: ${TEMPERATUR_CELCIUS}${UNIT}"
+	PERFSTRING="'Temperature'=${TEMPERATUR_CELCIUS}${UNIT};$WARNING;$CRITICAL;0;100"
+}
+
 case $MODE in
 	battery_time_remaining) battery_time_remaining
 	;;
 	battery_voltage) battery_voltage
 	;;
 	battery_capacity) battery_capacity
+	;;
+	temperature) temperature
 	;;
 esac
 # echo $STATE
